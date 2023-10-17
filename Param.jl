@@ -1,9 +1,13 @@
 module Param
 
+# main(P::Parameters) 中会用到
 export Parameters
 
+# 必须要 using .Pushers 后
+# Parameters 的 pusher 的类型才能是函数
 include("Pushers.jl")
 using .Pushers
+
 mutable struct Parameters{T<:AbstractFloat}
 	filename::String
 	nsteps::Int
