@@ -2,9 +2,9 @@ module PtcStruct
 
 export Particle
 
-struct Particle
-	X::Matrix
-	V::Matrix
+struct Particle{M<:AbstractMatrix}
+	X::M
+	V::M
 	m::Float64
 end
 
