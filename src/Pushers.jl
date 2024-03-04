@@ -2,6 +2,7 @@ module Pushers
 using Test
 using LinearAlgebra:norm
 export pusher2, pusher1
+using LinearAlgebra: I, ⋅ 
 
 include("parameters.jl")
 const G = 1
@@ -38,4 +39,27 @@ function pusher2(x::T, p::T) where T <:AbstractFloat
 	return (x_,p_)
 end
 
+q=1
+m=1
+c=1
+dt=0.1
+
+function _Omega(B::AbstractVector)
+	mat = [  0    -B[3]   B[2]
+		    B[3]   0     -B[1]
+		   -B[2]   B[1]    0   ]
+	return q*dt/(2m*c) .* mat
+end
+
+function boris(x::AbstractVector, p::AbstractVector, E::AbstractVector, B::AbstractVector)
+	Ω=_Omega(B)
+	R=inv(I + Ω)*(I - Ω)
+    γ = sqrt(1 + p⋅p/(m^2*c^2))
+    # println(γ)
+    # γ=1
+    v = p/(γ*m)
+	new_v = R*v + q*dt/m * inv(I+Ω) * E
+	new_x = x + new_v*dt
+	return (new_x,new_v*γ*m)
+end
 end

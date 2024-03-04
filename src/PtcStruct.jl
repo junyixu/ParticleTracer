@@ -1,15 +1,11 @@
 module PtcStruct
-
+include("Constants.jl")
 export Particle
 
 struct Particle{M<:AbstractMatrix}
 	X::M
-	V::M
-	m::Float64
+	P::M
+	B::M
 end
-
-# function init_cond(p::Particle)
-# 	echorow
-# end
 
 end
