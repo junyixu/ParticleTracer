@@ -15,8 +15,9 @@ using Debugger
 include("Fields.jl")
 include("PtcStruct.jl")
 using .PtcStruct
-include("Pushers.jl")
 include("UserInputs.jl")
+include("Pushers.jl")
+pusher = @eval Pushers.$(UserInputs.pusher)
 using .UserInputs: TotalSteps
 include("Constants.jl")
 using .Constants
@@ -38,7 +39,17 @@ function push_ptc!(ptc)
         p = ptc.P[s, :] # vector p
         B = Fields.tokamak(x..., 1.0) # q = 1.0
         ptc.B[s+1, :] = B
-        ptc.X[s+1, :], ptc.P[s+1, :] = Pushers.boris(x, p, [0, 0, 0], B)
+        ptc.X[s+1, :], ptc.P[s+1, :] = pusher(x, p, [0.0, 0, 0], B)
+    end
+end
+
+function push_ptc!(pusher::Function, ptc)
+    for s in 1:TotalSteps
+        x = ptc.X[s, :] # vector x
+        p = ptc.P[s, :] # vector p
+        B = Fields.tokamak(x..., 1.0) # q = 1.0
+        ptc.B[s+1, :] = B
+        ptc.X[s+1, :], ptc.P[s+1, :] = pusher(x, p, [0.0, 0, 0], B)
     end
 end
 
