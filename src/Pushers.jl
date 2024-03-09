@@ -55,8 +55,6 @@ function p₋2p₊(B::Vector{T}, γ::T, p::Vector{T})::Vector{T} where T <:Abstr
     return [px₊, py₊, pz₊] # new p
 end
 
-# 把粒子和存储粒子信息分别写两个结构
-
 function RVPA_Cay3D(x::AbstractVector{T}, p::AbstractVector{T}, E::AbstractVector{T}, B::AbstractVector{T}) where T <: AbstractFloat
 	# p₋
     p₋ = p + 0.5Δt*E;

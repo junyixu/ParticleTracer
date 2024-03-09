@@ -7,6 +7,7 @@ mₑ = C.m_e.val
 Δt = 1.0e-1
 N = 1 # number of particles
 TotalSteps = 4000000 # total steps
+SavePerNSteps = 10000 # Save 1000 steps
 
 # tokamak parameters
 B0 = 2.0 # Magnetic strength (T)

@@ -1,8 +1,14 @@
 module PtcStruct
 include("Constants.jl")
-export Particle
+export Particle, ParticleData
 
-struct Particle{M<:AbstractMatrix{<:AbstractFloat}}
+struct Particle{M<:AbstractVector{<:AbstractFloat}}
+	X::M
+	P::M
+	B::M
+end
+
+struct ParticleData{M<:AbstractMatrix{<:AbstractFloat}}
 	X::M
 	P::M
 	B::M

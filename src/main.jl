@@ -18,39 +18,35 @@ using .PtcStruct
 include("UserInputs.jl")
 include("Pushers.jl")
 pusher = @eval Pushers.$(UserInputs.pusher)
-using .UserInputs: TotalSteps
+using .UserInputs: TotalSteps, SavePerNSteps
 include("Constants.jl")
 using .Constants
 
 # %%
-function init_ptc(x0::AbstractVector, p0::AbstractVector)
-    x0 = reshape(x0, 1, 3)
-    p0 = reshape(p0, 1, 3)
-    X = [x0; zeros(TotalSteps, 3)]
-    P = [p0; zeros(TotalSteps, 3)]
-    B = zeros(TotalSteps+1, 3)
-    ptc = Particle(X, P, B)
-    return ptc
+function init_ptc_data(x0::AbstractVector, p0::AbstractVector, N::Int)
+    x0 = reshape(x0, 3, 1)
+    p0 = reshape(p0, 3, 1)
+    X = [x0 zeros(3, N-1)]
+    P = [p0 zeros(3, N-1)]
+    B = zeros(3, N)
+    ptc_data = ParticleData(X, P, B)
+    return ptc_data
 end
-
+# %%
+function save(ptc_data::ParticleData, ptc::Particle, i::Int)
+    ptc_data.X[:, i] .= ptc.X
+    ptc_data.P[:, i] .= ptc.P
+    ptc_data.B[:, i] .= ptc.B
+end
+# %%
 function push_ptc!(ptc)
-    for s in 1:TotalSteps
-        x = ptc.X[s, :] # vector x
-        p = ptc.P[s, :] # vector p
-        B = Fields.tokamak(x..., 1.0) # q = 1.0
-        ptc.B[s+1, :] = B
-        ptc.X[s+1, :], ptc.P[s+1, :] = pusher(x, p, [0.0, 0, 0], B)
-    end
-end
-
-function push_ptc!(pusher::Function, ptc)
-    for s in 1:TotalSteps
-        x = ptc.X[s, :] # vector x
-        p = ptc.P[s, :] # vector p
-        B = Fields.tokamak(x..., 1.0) # q = 1.0
-        ptc.B[s+1, :] = B
-        ptc.X[s+1, :], ptc.P[s+1, :] = pusher(x, p, [0.0, 0, 0], B)
-    end
+    x = ptc.X # vector x
+    p = ptc.P # vector p
+    B = Fields.tokamak(x..., 1.0) # q = 1.0
+    xx, pp = pusher(x, p, [0.0, 0, 0], B)
+    ptc.X .= xx
+    ptc.P .= pp
+    ptc.B .= B
 end
 
 # %%
@@ -81,12 +77,20 @@ end
 
 # %%
 function main()
-    ptc = init_ptc(Constants.x0,Constants.p0)
-    push_ptc!(ptc)
 
-    x = ptc.X[:, 1]
-    y = ptc.X[:, 2]
-    z = ptc.X[:, 3]
+    ptc = Particle(Constants.x0, Constants.p0, [0.0, 0, 0])
+    data_length = Int(TotalSteps/SavePerNSteps)
+    ptc_data = init_ptc_data(Constants.x0,Constants.p0, data_length)
+
+    for i in 2:TotalSteps
+        push_ptc!(ptc)
+        # i % SavePerNSteps == 0 && @bp
+        i % SavePerNSteps == 0 && i != TotalSteps && save(ptc_data, ptc, Int(i/SavePerNSteps)+1)
+    end
+
+    x = ptc_data.X[1, :]
+    y = ptc_data.X[2, :]
+    z = ptc_data.X[3, :]
     x = x * u.x
     y = y * u.x
     z = z * u.x
