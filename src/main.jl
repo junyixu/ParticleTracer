@@ -21,6 +21,7 @@ pusher = @eval Pushers.$(UserInputs.pusher)
 using .UserInputs: TotalSteps, SavePerNSteps
 include("Constants.jl")
 using .Constants
+using HDF5
 
 # %%
 function init_ptc_data(x0::AbstractVector, p0::AbstractVector, N::Int)
@@ -86,6 +87,12 @@ function main()
         push_ptc!(ptc)
         # i % SavePerNSteps == 0 && @bp
         i % SavePerNSteps == 0 && i != TotalSteps && save(ptc_data, ptc, Int(i/SavePerNSteps)+1)
+    end
+
+    h5open("ptc_data.h5", "w") do file
+        write(file, "X", ptc_data.X)
+        write(file, "P", ptc_data.P)
+        write(file, "B", ptc_data.B)
     end
 
     x = ptc_data.X[1, :]
