@@ -1,9 +1,12 @@
 module Constants
-include("UserInputs.jl")
-using .UserInputs
+
+# R0 = 1995.0
+# x0 = [2112.0, 0, 0]
+# p0 = [5.0, 1, 0]
+
 import PhysicalConstants.CODATA2018 as C
 
-export u
+export Unit
 
 constants=(:e, :m_p, :m_e)
 for constant in constants
@@ -45,10 +48,5 @@ function Unit(B::Float64, type::String)
 end
 Unit(B::Float64)=Unit(B, e, m_e)
 
-
-u = Unit(UserInputs.B0)
-R0 = UserInputs.R0/u.x
-x0 = UserInputs.x0/u.x
-p0 = UserInputs.p0/u.p
 
 end

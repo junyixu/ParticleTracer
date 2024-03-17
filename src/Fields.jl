@@ -1,4 +1,5 @@
 module Fields
+include("UserInputs.jl")
 include("Constants.jl")
 using .Constants
 
@@ -16,7 +17,7 @@ end
 function tokamak(x::Float64,y::Float64,z::Float64,q)
     # q: 安全因子
 
-    R0 = Constants.R0
+    R0 = UserInputs.R0
 
 	R²=x^2 + y^2
 	R=sqrt(R²)

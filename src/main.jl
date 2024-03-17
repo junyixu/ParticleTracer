@@ -9,21 +9,34 @@
 =#
 
 
+
 using MyPlots
 using Debugger
 
+using Distributed
+
+
+@everywhere begin
 include("Fields.jl")
 include("PtcStruct.jl")
-using .PtcStruct
 include("UserInputs.jl")
 include("Pushers.jl")
+include("Constants.jl")
+end
+
+
+@everywhere begin
+using .PtcStruct
 pusher = @eval Pushers.$(UserInputs.pusher)
 using .UserInputs: TotalSteps, SavePerNSteps
-include("Constants.jl")
 using .Constants
 using HDF5
+using LinearAlgebra: ⋅, norm
+include("initialization.jl")
+end
 
 # %%
+@everywhere begin
 function init_ptc_data(x0::AbstractVector, p0::AbstractVector, N::Int)
     x0 = reshape(x0, 3, 1)
     p0 = reshape(p0, 3, 1)
@@ -33,13 +46,11 @@ function init_ptc_data(x0::AbstractVector, p0::AbstractVector, N::Int)
     ptc_data = ParticleData(X, P, B)
     return ptc_data
 end
-# %%
 function save(ptc_data::ParticleData, ptc::Particle, i::Int)
     ptc_data.X[:, i] .= ptc.X
     ptc_data.P[:, i] .= ptc.P
     ptc_data.B[:, i] .= ptc.B
 end
-# %%
 function push_ptc!(ptc)
     x = ptc.X # vector x
     p = ptc.P # vector p
@@ -48,6 +59,7 @@ function push_ptc!(ptc)
     ptc.X .= xx
     ptc.P .= pp
     ptc.B .= B
+end
 end
 
 # %%
@@ -74,26 +86,52 @@ end
 #     # plt.show()
 
 # end
-# %%
 
 # %%
+
 function main()
 
-    ptc = Particle(Constants.x0, Constants.p0, [0.0, 0, 0])
+    @sync @distributed for n = 1:UserInputs.N
+    x0 = SetParticlePosition_ParabolicTorus(UserInputs.a)
+    B0 = Fields.tokamak(x0..., 1.0)
+    p0 = SetParticleMomentum_Gyrocenter(x0..., B0) 
+    ptc = Particle(x0, p0, B0)
     data_length = Int(TotalSteps/SavePerNSteps)
-    ptc_data = init_ptc_data(Constants.x0,Constants.p0, data_length)
+    ptc_data = init_ptc_data(x0,p0, data_length)
 
+    # main iterating loop to push particles
     for i in 2:TotalSteps
         push_ptc!(ptc)
-        # i % SavePerNSteps == 0 && @bp
+        # save ptc data to ptc_data
         i % SavePerNSteps == 0 && i != TotalSteps && save(ptc_data, ptc, Int(i/SavePerNSteps)+1)
     end
 
-    h5open("ptc_data.h5", "w") do file
-        write(file, "X", ptc_data.X)
+    # IO:
+
+    # if not def UserInputs.output_dir
+    isdefined(UserInputs, :output_dir) || (UserInputs.output_dir = "../DataAnalysis")
+    mkpath(UserInputs.output_dir) # mkdir if it does not exist
+    h5open(joinpath(UserInputs.output_dir, "ptc_data$n.h5"), "w") do file
+        write(file, "ptcl", ptc_data.X)
         write(file, "P", ptc_data.P)
         write(file, "B", ptc_data.B)
     end
+
+    end
+# %%
+
+#=
+f = h5open("ptc_data4.h5", "r")
+X = read(f, "X")
+
+    x = X[1, :]
+    y = X[2, :]
+    z = X[3, :]
+    x = x * u.x
+    y = y * u.x
+    z = z * u.x
+    R = sqrt.(x.^2 + y.^2)
+
 
     x = ptc_data.X[1, :]
     y = ptc_data.X[2, :]
@@ -106,6 +144,7 @@ function main()
     plt.plot(R, z)
     # plt.axis("equal")
     plt.show()
+=#
 
     # ax=plt.axes(projection="3d")
     # ax.plot3D(x, y, z)

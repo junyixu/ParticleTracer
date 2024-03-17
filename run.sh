@@ -1,2 +1,2 @@
 #! /bin/sh
-julia src/main.jl
+julia -p4 src/main.jl
