@@ -1,52 +1,34 @@
 ## Tokamak fields
 
-$$
-\mathbf{B} = \boldsymbol{\nabla} \xi + \frac{r^2}{qR} \boldsymbol{\nabla}\theta
-$$
+$$\mathbf{B} = \boldsymbol{\nabla} \xi + \frac{r^2}{qR} \boldsymbol{\nabla}\theta,$$
 where $q$ is safety factor.
 
 
-$\require{physics}$
+![](figures//tokamak.png)
 
-![](resources/tokamak.png)
 Jacobian:
-$$
-  J = \grad \xi^1 \vdot \grad \xi^2 \cross \grad \xi^3 = \frac{1}{\sqrt{g}}
-$$
+$$J = \boldsymbol{\nabla} \xi^1 \cdot \boldsymbol{\nabla} \xi^2 \times \boldsymbol{\nabla} \xi^3 = \frac{1}{\sqrt{g}}$$
 
 Gradient:
-$$
-    \grad = \grad \xi^i \pdv{\xi^i}
-$$
+$$\boldsymbol{\nabla} = \boldsymbol{\nabla} \xi^i \frac{\partial}{\partial \xi^i}$$
 
 Divergence:
-$$
-  \div \vb{A} = \frac{1}{\sqrt{g}} \pdv{\xi^i} ( A^i \sqrt{g} )
-$$
+$$\boldsymbol{\nabla} \cdot \mathbf{A} = \frac{1}{\sqrt{g}} \frac{\partial}{\partial \xi^i} ( A^i \sqrt{g} )$$
 
 Curl:  
-If $\vb{B} = \curl \vb{A}$ then
-$$
-B^i =  \frac{1}{\sqrt{g}} \epsilon^{ijk} \pdv{A_k}{\xi^j}
-$$
+If $\mathbf{B} = \boldsymbol{\nabla} \times \mathbf{A}$ then
+$$B^i =  \frac{1}{\sqrt{g}} \epsilon^{ijk} \frac{\partial A_k}{\partial \xi^j}$$
 
+$$\sin \zeta = -\frac{y}{R} \quad \cos \zeta = \frac{x}{R}$$
 
-$$
-  \sin \zeta = -\frac{y}{R} \quad \cos \zeta = \frac{x}{R}
-$$
-
-{{< texd `\begin{aligned}
-  \vu{\zeta} = -\sin \zeta \vu{x} - \cos \zeta \vu{y}, \\
-  \vu{\theta} = - \sin \theta \vu{R} + \cos \theta \vu{z}\\
-  \vu{R} = \cos \zeta \vu{x} - \sin \zeta \vu{y}.
-\end{aligned}` >}}
+$$\begin{aligned}
+  \hat{\zeta} = -\sin \zeta \hat{x} - \cos \zeta \hat{y}, \\
+  \hat{\theta} = - \sin \theta \hat{R} + \cos \theta \hat{z}\\
+  \hat{\mathbf{R}} = \cos \zeta \hat{x} - \sin \zeta \hat{y}.
+\end{aligned}$$
 
 From the above equations, it can be concluded that
-$$
-\vu{\theta} = - \sin \theta \cos \zeta \vu{x} + \sin \theta \sin \zeta \vu{y} + \cos \theta \vu{z}.
-$$
-
-
+$$\hat{\theta} = - \sin \theta \cos \zeta \hat{x} + \sin \theta \sin \zeta \hat{y} + \cos \theta \hat{z}.$$
 
 ## Relativistic volume-preserving algorithms
 
@@ -58,7 +40,9 @@ We consider the most general case in which the electromagnetic fields are time-d
 To apply the splitting
 and processing technique, we introduce $\sigma = t$ as a new
 dependent variable, then it follows from Eq.(1) that
+
 $$\frac { d } { d t } \left( \begin{array} { l } \mathbf { x } \\ \mathbf { p } \\ \sigma \end{array} \right) = \left( \begin{array} { c } \frac { 1 } { m _ { 0 } \gamma ( p ) } \mathbf { p } \\ q \mathbf { E } ( \mathbf { x } , \sigma ) + \frac { q } { m _ { 0 } \gamma ( p ) } \mathbf { p } \times \mathbf { B } ( \mathbf { x } , \sigma ) \end{array} \right)$$
+
 From Eq.(22), it can be seen that with the coordinate
 $(\mathbf{x}, \mathbf{p}, \sigma)$, the system Eq. (1)
 becomes an autonomous system which are defined in an expanded space
@@ -68,7 +52,9 @@ Notice that for any map
 $\Psi:(\mathbf{x}, \mathbf{p},\sigma) \mapsto ( \mathbf { X } , \mathbf { P } , \Sigma )$,
 if $\partial \Sigma / \partial \mathbf{x} = \partial \Sigma / \partial \mathbf{p} = \mathbf{0}, \partial \Sigma / \partial \sigma = 1$,
 then its Jacobian satisfied
-$$\operatorname { det } \left( \frac { \partial ( \mathbf { X } , \mathbf { P } , \Sigma ) } { \partial ( \mathbf { x } , \mathbf { p } , \sigma ) } \right) = \operatorname { det } \left( \frac { \partial ( \mathbf { X } , \mathbf { P } ) } { \partial ( \mathbf { x } , \mathbf { p } ) } \right).$$
+
+$$\mathrm{det} \left( \frac { \partial ( \mathbf { X } , \mathbf { P } , \Sigma ) } { \partial ( \mathbf { x } , \mathbf { p } , \sigma ) } \right) = \mathrm{ det } \left( \frac { \partial ( \mathbf { X } , \mathbf { P } ) } { \partial ( \mathbf { x } , \mathbf { p } ) } \right).$$
+
 Therefore, as long as the appended variable $\sigma$ solves
 $\dot{\sigma} = \text{const}$, the expanded system (2) inherits the volume-
 preserving nature of the system (1). Similarly, the volume-
@@ -78,22 +64,31 @@ This gives us a hint on how to split the system.
 
 It is observed that the system (2) can be decomposed as
 three source-free solvable subsystems
+
 $$\begin{aligned} \frac { d } { d t } \left( \begin{array} { l } \mathbf { x } \\ \mathbf { p } \\ \sigma \end{array} \right) = & \left( \begin{array} { c } \frac { 1 } { m _ { 0 } \gamma ( p ) } \mathbf { p } \\ 0 \\ 1 \end{array} \right) + \left( \begin{array} { c } 0 \\ q \mathbf { E } ( \mathbf { x } , \sigma ) \\ 0 \end{array} \right) \\ & + \left( \begin{array} { c } \frac { q } { m _ { 0 } \gamma ( p ) } \mathbf { p } \times \mathbf { B } ( \mathbf { x } , \sigma ) \\ 0 \end{array} \right) \\ & = F _ { 1 } ( \mathbf { x } , \mathbf { p } , t ) + F _ { 2 } ( \mathbf { x } , \mathbf { p } , t ) + F _ { 3 } ( \mathbf { x } , \mathbf { p } , t ) \end{aligned}$$
+
 The first subsystems with $F_1$ and $F_2$ can be solved exactly
 by a translational transformation as
+
 $$\phi _ { h } ^ { F _ { 1 } } : \left\{ \begin{array} { l } \mathbf { x } ( t + h ) = \mathbf { x } ( t ) + h \frac { \mathbf { p } ( t ) } { m _ { 0 } \gamma ( p ( t ) ) } \\ \mathbf { p } ( t + h ) = \mathbf { p } ( t ) \\ \sigma ( t + h ) = \sigma ( t ) + h \end{array} \right.$$
+
 $$\phi _ { h } ^ { F _ { 2 } } : \left\{ \begin{array} { l } \mathbf { x } ( t + h ) = \mathbf { x } ( t ) \\ \mathbf { p } ( t + h ) = \mathbf { p } ( t ) + h q \mathbf { E } ( \mathbf { x } ( t ) , \sigma ( t ) ) \\ \sigma ( t + h ) = \sigma ( t ) \end{array} \right.$$
+
 Here, the mappings $\phi_h^{F_i}, i = 1,2,3$ denote the $h$-time step updating.
 When the third subsystem is considered, it is noticed that
 $p^2 = \mathbf{p}^T \mathbf{p}$ is invariant along the exact solution flow,
 and therefore , so is $\gamma(p$.
 Thus, the updating map $\phi_h^{F_3}$ of the exact solution can be calculated as
+
 $$\phi _ { h } ^ { F _ { 3 } } : \left\{ \begin{array} { l } \mathbf { x } ( t + h ) = \mathbf { x } ( t ) \\ \mathbf { p } ( t + h ) = \exp \left( h \frac { q } { m _ { 0 } \gamma ( p ( t ) ) } \hat { \mathbf { B } } ( \mathbf { x } ( t ) , \sigma ( t ) ) \right) \mathbf { p } ( t ) \\ \sigma ( t + h ) = \sigma ( t ) \end{array} \right.$$
-with $\hat { \mathbf { B } } = \left[ \begin{array} {ccc} 0 & B _ { 3 } & - B _ { 2 } \\ - B _ { 3 } & 0 & B _ { 1 } \\ B _ { 2 } & - B _ { 1 } & 0 \end{array} \right]$
+
+with $\hat { \mathbf { B } } = \begin{bmatrix} 0 & B _ { 3 } & - B _ { 2 } \\ - B _ { 3 } & 0 & B _ { 1 } \\ B _ { 2 } & - B _ { 1 } & 0 \end{bmatrix}$
 defined by $\mathbf{B}(x) = [B_1(\mathbf{x}), B_2(\mathbf{x}), B_3(\mathbf{x})]^T$.
 The operator exp in Eq.(24) is the exponential operator of a matrix,
 which can be expressed in a closed form for a skew symmetric matrix of $3 \times 3$ as
+
 $$\begin{aligned} \mathbf { p } ( t + h ) = & \exp ( h a \hat { \mathbf { B } } ) \mathbf { p } ( t ) = \mathbf { p } ( t ) + \frac { \sin ( h a B ) } { B } \mathbf { p } ( t ) \\ & \times \mathbf { B } + \frac { ( 1 - \cos ( h a B ) ) } { B ^ { 2 } } \mathbf { p } ( t ) \times \mathbf { B } \times \mathbf { B } \end{aligned}$$
+
 Here, $a = \frac{q}{m_0 \gamma(p(t))}$.
 It is easy to prove that each of the mappings
 $\varphi_h^{F_1}, \varphi_h^{F_2}, \varphi_h^{F_3}$ preserves the volume in phase space $(\mathbf{x}, \mathbf{p})$.
