@@ -29,11 +29,17 @@ function local_frame(Bx::T,By::T,Bz::T) where T<:AbstractFloat
 end
 
 function SetParticleMomentum_Gyrocenter(x::T, y::T, z::T, B::AbstractVector{<:AbstractFloat}) where T <: AbstractFloat
-	γ = rand(Distributions.Normal(UserInputs.μ, UserInputs.σ))                         # 产生一个服从正态分布的 gamma，范围在(Mu-5*Sigma,Mu+5*Sigma)
-    if γ^2-1 < 0 
-        (γ = UserInputs.μ)
-        @warn("γ^2-1 < 0!")
+    # 确保 gamma 值有效，如果无效则重新采样
+    # TODO 查看 APT 里面是怎么保证 γ >= 1 的
+    local γ
+    while true
+        γ = rand(Distributions.Normal(UserInputs.μ, UserInputs.σ))
+        if γ^2 - 1 >= 0
+            break
+        end
+        @warn "生成的 γ 值无效 (γ=$γ)，重新采样"
     end
+    
     p = sqrt(γ^2-1) # ||p||
 	sinθ_min	= UserInputs.sinθ_min # p⊥/p的最小值
 	sinθ_max= UserInputs.sinθ_max # p⊥/p的最大值
