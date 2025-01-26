@@ -30,6 +30,36 @@ function boris(x::AbstractVector, p::AbstractVector, E::AbstractVector, B::Abstr
 	return (new_x,new_v*γ*m)
 end
 
+function boris_step(𝐫, 𝐯, 𝐄, 𝐁)
+    # 计算 γ factor
+    γ = sqrt(1 + (𝐯⋅𝐯)/c^2)
+    𝐩 = γ*m*𝐯  # momentum
+
+    # Calculate rotation vector 𝐓
+    𝐓 = q * 𝐁 * (Δt / (2m))
+    
+    # Calculate scaling factor for rotation
+    𝐬 = 2𝐓 / (1 + 𝐓⋅𝐓)
+    
+    # First half-acceleration by electric field
+    𝐩⁻ = 𝐩 + (q * 𝐄 * Δt) / 2
+    𝐯⁻ = 𝐩⁻/(m*sqrt(1 + (𝐩⁻⋅𝐩⁻)/(m^2*c^2)))
+    
+    # Magnetic field rotation
+    𝐯′ = 𝐯⁻ + 𝐯⁻ × 𝐓
+    𝐯⁺ = 𝐯⁻ + 𝐯′ × 𝐬
+    
+    # Second half-acceleration by electric field
+    𝐩⁺ = m*γ*𝐯⁺
+    𝐩ₙ₊₁ = 𝐩⁺ + (q * 𝐄 * Δt) / 2
+    𝐯ₙ₊₁ = 𝐩ₙ₊₁/(m*sqrt(1 + (𝐩ₙ₊₁⋅𝐩ₙ₊₁)/(m^2*c^2)))
+    
+    # Position update using the final velocity
+    𝐫ₙ₊₁ = 𝐫 + 𝐯ₙ₊₁ * Δt
+    
+    return 𝐫ₙ₊₁, 𝐯ₙ₊₁
+end
+
 function p₋2p₊(B::Vector{T}, γ::T, p::Vector{T})::Vector{T} where T <:AbstractFloat
     # B[1]: Bx
 	# B[2]: By
