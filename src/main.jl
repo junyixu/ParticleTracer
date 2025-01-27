@@ -62,7 +62,7 @@ function push_ptc!(ptc)
     ptc.P .= pp
     ptc.B .= B
 end
-end
+end # @everywhere
 
 # %%
 # function anim(ps::Vector{Particle})
