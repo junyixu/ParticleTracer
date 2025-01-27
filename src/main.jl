@@ -109,7 +109,7 @@ function main()
         ptc_data = init_ptc_data(x0, p0, data_length)
 
         # Main computation loop
-        for i in 2:TotalSteps
+        for i in 2:TotalSteps-1
             push_ptc!(ptc)
             # Save intermediate results
             i % SavePerNSteps == 0 && i != TotalSteps && 
