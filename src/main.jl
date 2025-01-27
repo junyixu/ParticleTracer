@@ -8,10 +8,9 @@
     Distributed under terms of the MIT license.
 =#
 
-
-
-using MyPlots
-using Debugger
+# using MyPlots
+# using Debugger
+using Dates
 
 using Distributed
 
@@ -22,6 +21,7 @@ include("PtcStruct.jl")
 include("UserInputs.jl")
 include("Pushers.jl")
 include("Constants.jl")
+include("DataIO.jl")
 end
 
 
@@ -34,6 +34,8 @@ using HDF5
 using LinearAlgebra: ⋅, norm
 include("initialization.jl")
 end
+
+@everywhere using .DataIO
 
 # %%
 @everywhere begin
@@ -60,7 +62,7 @@ function push_ptc!(ptc)
     ptc.P .= pp
     ptc.B .= B
 end
-end
+end # @everywhere
 
 # %%
 # function anim(ps::Vector{Particle})
@@ -89,35 +91,40 @@ end
 
 # %%
 
+"""
+Main simulation program for particle trajectory calculation.
+Handles parallel computation and data saving.
+"""
 function main()
-
+    # Create save configuration
+    save_config = SaveConfig(batch_size=1000)
+    
     @sync @distributed for n = 1:UserInputs.N
-    x0 = SetParticlePosition_ParabolicTorus(UserInputs.a)
-    B0 = Fields.tokamak(x0..., 1.0)
-    p0 = SetParticleMomentum_Gyrocenter(x0..., B0) 
-    ptc = Particle(x0, p0, B0)
-    data_length = Int(TotalSteps/SavePerNSteps)
-    ptc_data = init_ptc_data(x0,p0, data_length)
+        # Initialize particle parameters
+        x0 = SetParticlePosition_ParabolicTorus(UserInputs.a)
+        B0 = Fields.tokamak(x0..., 1.0)
+        p0 = SetParticleMomentum_Gyrocenter(x0..., B0) 
+        ptc = Particle(x0, p0, B0)
+        data_length = Int(TotalSteps/SavePerNSteps)
+        ptc_data = init_ptc_data(x0, p0, data_length)
 
-    # main iterating loop to push particles
-    for i in 2:TotalSteps
-        push_ptc!(ptc)
-        # save ptc data to ptc_data
-        i % SavePerNSteps == 0 && i != TotalSteps && save(ptc_data, ptc, Int(i/SavePerNSteps)+1)
+        # Main computation loop
+        for i in 2:TotalSteps
+            push_ptc!(ptc)
+            # Save intermediate results
+            i % SavePerNSteps == 0 && i != TotalSteps && 
+                save(ptc_data, ptc, Int(i/SavePerNSteps)+1)
+        end
+
+        # Each process saves to its temporary file
+        save_particle_data(ptc_data, n, x0, p0, B0, save_config)
     end
-
-    # IO:
-
-    # if not def UserInputs.output_dir
-    isdefined(UserInputs, :output_dir) || (UserInputs.output_dir = "../DataAnalysis")
-    mkpath(UserInputs.output_dir) # mkdir if it does not exist
-    h5open(joinpath(UserInputs.output_dir, "ptc_data$n.h5"), "w") do file
-        write(file, "ptcl", ptc_data.X)
-        write(file, "P", ptc_data.P)
-        write(file, "B", ptc_data.B)
-    end
-
-    end
+    
+    # After all computations, merge process files
+    merge_process_files(save_config)
+    # Create index file for the dataset
+    create_index_file(save_config)
+end
 # %%
 
 #=
@@ -153,6 +160,6 @@ X = read(f, "X")
     # ax.set_zlabel("Z")
     # plt.show()
 
-end
+
 # %%
 main()
