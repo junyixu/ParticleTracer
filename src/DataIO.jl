@@ -102,7 +102,7 @@ function save_single_particle(file, particle_id, ptc_data, global_n, x0, p0, B0)
     # Save trajectory data
     g_traj = create_group(g_ptc, "trajectory")
     create_dataset(g_traj, "position", ptc_data.X, 
-                  chunk=(3,min(100,size(ptc_data.X,:))), 
+                  chunk=(3,min(100,size(ptc_data.X,2))), 
                   compress=3)
     create_dataset(g_traj, "momentum", ptc_data.P, 
                   chunk=(3,min(100,size(ptc_data.P,2))), 
