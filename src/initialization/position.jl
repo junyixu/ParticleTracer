@@ -43,6 +43,9 @@ function Para(m::AbstractFloat)
 end
 
 
+"""
+生成抛物线分布的粒子位置
+"""
 function SetParticlePosition_ParabolicTorus(r_max::AbstractFloat)
      rθζ=[Para(r_max)
           2π*rand()
