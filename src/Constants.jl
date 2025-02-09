@@ -44,7 +44,7 @@ function Unit(B::Float64, type::String)
 	if type == "alpha"
 		return Unit(B, 2*e, m_α) # 有时候需要改单位电量和单位质量
 	end
-	return Unit(B, e, me)
+	return Unit(B, e, m_e)
 end
 Unit(B::Float64)=Unit(B, e, m_e)
 
