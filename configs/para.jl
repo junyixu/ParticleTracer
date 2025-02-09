@@ -21,6 +21,8 @@ ptc_type=:electron # particle type
 # pusher=:boris # pusher type
 pusher=:RVPA_Cay3D
 
+output_dir = "./DataAnalysis2"
+
 μ = 5.0
 σ = 2.0
 sinθ_min = 0.0
