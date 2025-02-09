@@ -2,10 +2,11 @@ module Pushers
 using Test
 using LinearAlgebra:norm
 export pusher2, pusher1
-using LinearAlgebra: I, ⋅ 
+using LinearAlgebra: I, ⋅, ×
 
 include("UserInputs.jl")
 using .UserInputs: Δt
+@show Δt
 
 q=1
 m=1
@@ -22,42 +23,65 @@ function boris(x::AbstractVector, p::AbstractVector, E::AbstractVector, B::Abstr
 	Ω=_Omega(B)
 	R=inv(I + Ω)*(I - Ω)
     γ = sqrt(1 + p⋅p/(m^2*c^2))
-    # println(γ)
-    # γ=1
     v = p/(γ*m)
 	new_v = R*v + q*Δt/m * inv(I+Ω) * E
 	new_x = x + new_v*Δt
 	return (new_x,new_v*γ*m)
 end
 
-function boris_step(𝐫, 𝐯, 𝐄, 𝐁)
-    # 计算 γ factor
-    γ = sqrt(1 + (𝐯⋅𝐯)/c^2)
-    𝐩 = γ*m*𝐯  # momentum
 
-    # Calculate rotation vector 𝐓
-    𝐓 = q * 𝐁 * (Δt / (2m))
-    
-    # Calculate scaling factor for rotation
-    𝐬 = 2𝐓 / (1 + 𝐓⋅𝐓)
-    
-    # First half-acceleration by electric field
-    𝐩⁻ = 𝐩 + (q * 𝐄 * Δt) / 2
-    𝐯⁻ = 𝐩⁻/(m*sqrt(1 + (𝐩⁻⋅𝐩⁻)/(m^2*c^2)))
-    
-    # Magnetic field rotation
-    𝐯′ = 𝐯⁻ + 𝐯⁻ × 𝐓
-    𝐯⁺ = 𝐯⁻ + 𝐯′ × 𝐬
-    
-    # Second half-acceleration by electric field
-    𝐩⁺ = m*γ*𝐯⁺
-    𝐩ₙ₊₁ = 𝐩⁺ + (q * 𝐄 * Δt) / 2
-    𝐯ₙ₊₁ = 𝐩ₙ₊₁/(m*sqrt(1 + (𝐩ₙ₊₁⋅𝐩ₙ₊₁)/(m^2*c^2)))
-    
-    # Position update using the final velocity
-    𝐫ₙ₊₁ = 𝐫 + 𝐯ₙ₊₁ * Δt
-    
-    return 𝐫ₙ₊₁, 𝐯ₙ₊₁
+"""
+    relativistic_boris_step(𝐱, 𝐩, 𝐄, 𝐁)
+
+Performs one step of the relativistic Boris algorithm in natural units (c = 1).
+
+Parameters:
+- 𝐱: Position vector (normalized)
+- 𝐩: Momentum vector (normalized)
+- 𝐄: Electric field vector
+- 𝐁: Magnetic field vector
+- q: Particle charge (normalized)
+- m: Particle rest mass (normalized)
+- Δt: Time step (normalized)
+
+Returns:
+- 𝐱ₙ₊₁: Updated position
+- 𝐩ₙ₊₁: Updated momentum
+"""
+function relativistic_boris_step(𝐱, 𝐩, 𝐄, 𝐁)
+    # Calculate γ factor
+    γ = √(1 + (𝐩 ⋅ 𝐩)/(m^2))
+
+    # Half acceleration in E-field
+    𝐩⁻ = 𝐩 + 0.5 * q * 𝐄 * Δt
+
+    # Calculate γ for rotation
+    γᵣ = √(1 + (𝐩⁻ ⋅ 𝐩⁻)/(m^2))
+
+    # Boris rotation for relativistic case
+    # 使用 u = p/γm 进行旋转
+    𝐮⁻ = 𝐩⁻/(m * γᵣ)
+
+    # 计算旋转矢量 𝐭
+    𝐭 = q * 𝐁 * Δt / (2m)
+    s = 2𝐭 / (1 + 𝐭 ⋅ 𝐭)
+
+    # 对 𝐮 进行 Boris 旋转
+    𝐮′ = 𝐮⁻ + 𝐮⁻ × 𝐭
+    𝐮⁺ = 𝐮⁻ + 𝐮′ × s
+
+    # 转回动量
+    𝐩⁺ = m * γᵣ * 𝐮⁺
+
+    # Second half acceleration in E-field
+    𝐩ₙ₊₁ = 𝐩⁺ + 0.5 * q * 𝐄 * Δt
+
+    # Update position using average of initial and final γ
+    γₙ₊₁ = √(1 + (𝐩ₙ₊₁ ⋅ 𝐩ₙ₊₁)/(m^2))
+    γ̄ = 0.5 * (γ + γₙ₊₁)
+    𝐱ₙ₊₁ = 𝐱 + Δt * 𝐩ₙ₊₁ / (m * γ̄)
+
+    return 𝐱ₙ₊₁, 𝐩ₙ₊₁
 end
 
 function p₋2p₊(B::Vector{T}, γ::T, p::Vector{T})::Vector{T} where T <:AbstractFloat
@@ -89,13 +113,13 @@ function RVPA_Cay3D(x::AbstractVector{T}, p::AbstractVector{T}, E::AbstractVecto
 	# p₋
     p₋ = p + 0.5Δt*E;
 
-    γ = 1 + p₋⋅p₋ # m = 1; c = 1
+    γ = sqrt(1 + p₋⋅p₋) # m = 1; c = 1
 
     p₊ = p₋2p₊(B, γ, p₋)
 
     p₊ = p₊ + 0.5Δt*E;
 
-    γ = 1 + p₊⋅p₊ # m = 1; c = 1
+    γ = sqrt(1 + p₊⋅p₊) # m = 1; c = 1
 
     v₊ =  p₊ / γ
     x₊ = x + v₊ * Δt
