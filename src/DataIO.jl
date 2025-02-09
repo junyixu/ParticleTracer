@@ -14,6 +14,7 @@ using Distributed
 using ..PtcStruct
 using ..UserInputs
 using ..UserInputs: TotalSteps, SavePerNSteps
+using TimeZones  # 需要添加这个包
 
 export save_particle_data, read_particle_data, create_index_file, merge_process_files, SaveConfig
 
@@ -110,7 +111,7 @@ function save_single_particle(file, particle_id, ptc_data, global_n, x0, p0, B0)
     attrs(g_meta)["total_steps"] = TotalSteps
     attrs(g_meta)["save_per_n_steps"] = SavePerNSteps
     attrs(g_meta)["global_particle_number"] = global_n
-    attrs(g_meta)["creation_date"] = string(Dates.now())
+    attrs(g_meta)["creation_date"] = string(now(localzone()))
     
     # Save initial conditions
     g_meta["initial_position"] = x0
