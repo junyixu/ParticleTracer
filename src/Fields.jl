@@ -14,7 +14,7 @@ end
 """
 环坐标下 tokamak 场
 """
-function tokamak(x::Float64,y::Float64,z::Float64,q)
+function tokamak(x::Float64,y::Float64,z::Float64,q=2.0)
     # q: 安全因子
 
     R0 = UserInputs.R0

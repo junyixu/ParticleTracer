@@ -56,7 +56,7 @@ end
 function push_ptc!(ptc)
     x = ptc.X # vector x
     p = ptc.P # vector p
-    B = Fields.tokamak(x..., 1.0) # q = 1.0
+    B = Fields.tokamak(x...) # q = 2.0
     xx, pp = pusher(x, p, [0.0, 0, 0], B)
     ptc.X .= xx
     ptc.P .= pp
@@ -101,15 +101,15 @@ function main()
     
     @sync @distributed for n = 1:UserInputs.N
         # Initialize particle parameters
-        x0 = SetParticlePosition_ParabolicTorus(UserInputs.a)
-        B0 = Fields.tokamak(x0..., 1.0)
-        p0 = SetParticleMomentum_Gyrocenter(x0..., B0) 
+        x0 = UserInputs.x0
+        B0 = Fields.tokamak(x0...)
+        p0 = UserInputs.p0
         ptc = Particle(x0, p0, B0)
         data_length = Int(TotalSteps/SavePerNSteps)
         ptc_data = init_ptc_data(x0, p0, data_length)
 
         # Main computation loop
-        for i in 2:TotalSteps-1
+        for i in 1:TotalSteps-1
             push_ptc!(ptc)
             # Save intermediate results
             i % SavePerNSteps == 0 && i != TotalSteps && 
