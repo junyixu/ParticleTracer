@@ -124,7 +124,7 @@ function save_single_particle(file, particle_id, ptc_data, global_n, x0, p0, B0)
     attrs(g_meta)["save_per_n_steps"] = SavePerNSteps
     attrs(g_meta)["global_particle_number"] = global_n
     attrs(g_meta)["creation_date"] = string(now(localzone()))
-    attrs(g_meta)["dt"] = UserInputs.Δt
+    attrs(g_meta)["Δt"] = UserInputs.Δt
     
     # Save initial conditions
     g_meta["initial_position"] = x0
@@ -175,7 +175,7 @@ function create_index_file(config::SaveConfigType)
         attrs(file)["total_batches"] = ceil(Int, UserInputs.N/config.batch_size)
         attrs(file)["creation_date"] = string(Dates.now())
         attrs(file)["simulation_timestamp"] = config.timestamp
-        attrs(file)["dt"] = UserInputs.Δt
+        attrs(file)["Δt"] = UserInputs.Δt
     end
 end
 
