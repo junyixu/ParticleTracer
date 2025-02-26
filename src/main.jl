@@ -96,6 +96,8 @@ Main simulation program for particle trajectory calculation.
 Handles parallel computation and data saving.
 """
 function main()
+    start_time = time()  # 记录开始时间
+    
     # Create save configuration
     save_config = SaveConfig(batch_size=1000)
     
