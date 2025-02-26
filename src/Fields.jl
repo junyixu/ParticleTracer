@@ -2,6 +2,7 @@ module Fields
 include("UserInputs.jl")
 include("Constants.jl")
 using .Constants
+R0 = UserInputs.R0
 
 function B_rϕz2xyz(BR::Float64,Bϕ::Float64,Bz::Float64, cosϕ::Float64, sinϕ::Float64)
     B1 = BR*cosϕ-Bϕ*sinϕ;
@@ -17,7 +18,6 @@ end
 function tokamak(x::Float64,y::Float64,z::Float64,q=2.0)
     # q: 安全因子
 
-    R0 = UserInputs.R0
 
 	R²=x^2 + y^2
 	R=sqrt(R²)
@@ -27,4 +27,5 @@ function tokamak(x::Float64,y::Float64,z::Float64,q=2.0)
 
     return [B1, B2, B3]
 end
-end
+
+end # module
