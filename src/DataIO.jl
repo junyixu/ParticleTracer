@@ -78,7 +78,19 @@ function save_particle_data(ptc_data::ParticleData, n::Int, x0, p0, B0, config::
     filename = joinpath(config.output_dir, 
                        "particles_$(config.timestamp)_batch$(batch_number)_proc$(myid()).h5")
     
+    # Open file in create/write mode:
+    # 'c' - create file if it doesn't exist
+    # 'w' - open for writing
     h5open(filename, "cw") do file
+        # Using mod1 instead of mod because:
+        # 1. mod1 returns values in range 1 to m (while mod returns 0 to m-1)
+        # 2. We need particle IDs to start from 1 for HDF5 group names
+        # 3. This maintains consistency with 1-based indexing convention
+        # eg:
+        # julia> mod1(5,5)
+        # 5
+        # julia> mod(5,5)
+        # 0
         particle_id = mod1(n, config.batch_size)
         save_single_particle(file, particle_id, ptc_data, n, x0, p0, B0)
         update_batch_metadata!(file, batch_number, config)
