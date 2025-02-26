@@ -14,7 +14,7 @@ for constant in constants
 end
 
 c = C.c_0.val
-m_α = 4m_p
+m_α = 6.6446573357e-27
 
 
 struct Unit
