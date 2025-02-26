@@ -3,6 +3,8 @@ include("UserInputs.jl")
 include("Constants.jl")
 using .Constants
 R0 = UserInputs.R0
+include("DiscreteFields.jl")
+using .DiscreteFields
 
 function B_rϕz2xyz(BR::Float64,Bϕ::Float64,Bz::Float64, cosϕ::Float64, sinϕ::Float64)
     B1 = BR*cosϕ-Bϕ*sinϕ;
