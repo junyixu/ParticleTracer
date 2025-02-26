@@ -15,54 +15,81 @@ using Dates
 using Distributed
 
 
-@everywhere begin
-include("Fields.jl")
-include("PtcStruct.jl")
-include("UserInputs.jl")
-include("Pushers.jl")
+# @everywhere begin
 include("Constants.jl")
+include("UserInputs.jl")
+include("PtcStruct.jl")
+include("Fields.jl")
+include("Pushers.jl")
 include("DataIO.jl")
-end
+# end
 
 
-@everywhere begin
+# @everywhere begin
 using .PtcStruct
+using .PtcStruct:MagneticParticleData, EMParticleData
 pusher = @eval Pushers.$(UserInputs.pusher)
+get_fields = @eval Fields.$(UserInputs.field)
 using .UserInputs: TotalSteps, SavePerNSteps
 using .Constants
 using HDF5
 using LinearAlgebra: ⋅, norm
 include("initialization.jl")
-end
+# end
 
-@everywhere using .DataIO
+using .DataIO
 
 # %%
-@everywhere begin
+# @everywhere begin
 function init_ptc_data(x0::AbstractVector, p0::AbstractVector, N::Int)
     x0 = reshape(x0, 3, 1)
     p0 = reshape(p0, 3, 1)
     X = [x0 zeros(3, N-1)]
     P = [p0 zeros(3, N-1)]
     B = zeros(3, N)
-    ptc_data = ParticleData(X, P, B)
-    return ptc_data
+    
+    if UserInputs.use_electric_field
+        E = zeros(3, N)
+        return ParticleData(X, P, B, E)
+    else
+        return ParticleData(X, P, B)
+    end
 end
-function save(ptc_data::ParticleData, ptc::Particle, i::Int)
+function save(ptc_data::MagneticParticleData, ptc::MagneticParticle, i::Int)
     ptc_data.X[:, i] .= ptc.X
     ptc_data.P[:, i] .= ptc.P
     ptc_data.B[:, i] .= ptc.B
 end
-function push_ptc!(ptc)
-    x = ptc.X # vector x
-    p = ptc.P # vector p
-    B = Fields.tokamak(x...) # q = 2.0
-    xx, pp = pusher(x, p, [0.0, 0, 0], B)
-    ptc.X .= xx
-    ptc.P .= pp
-    ptc.B .= B
+function save(ptc_data::EMParticleData, ptc::EMParticle, i::Int)
+    ptc_data.X[:, i] .= ptc.X
+    ptc_data.P[:, i] .= ptc.P
+    ptc_data.B[:, i] .= ptc.B
+    ptc_data.E[:, i] .= ptc.E
 end
-end # @everywhere
+function push_ptc!(ptc::MagneticParticle)
+    B, E = get_fields(ptc.X...)
+    xx, pp = pusher(ptc.X, ptc.P, E, B)
+    
+    # 逐元素更新，而不是整体赋值
+    for i in 1:3
+        ptc.X[i] = xx[i]
+        ptc.P[i] = pp[i]
+        ptc.B[i] = B[i]
+    end
+end
+function push_ptc!(ptc::EMParticle)
+    B, E = get_fields(ptc.X...)
+    xx, pp = pusher(ptc.X, ptc.P, E, B)
+    
+    # 逐元素更新，而不是整体赋值
+    for i in 1:3
+        ptc.X[i] = xx[i]
+        ptc.P[i] = pp[i]
+        ptc.B[i] = B[i]
+        ptc.E[i] = E[i]
+    end
+end
+# end # @everywhere
 
 # %%
 # function anim(ps::Vector{Particle})
@@ -101,12 +128,16 @@ function main()
     # Create save configuration
     save_config = SaveConfig(batch_size=1000)
     
-    @sync @distributed for n = 1:UserInputs.N
+    for n = 1:UserInputs.N
         # Initialize particle parameters
         x0 = UserInputs.x0
-        B0 = Fields.tokamak(x0...)
+        B0,E0 = get_fields(x0...)
         p0 = UserInputs.p0
-        ptc = Particle(x0, p0, B0)
+        if UserInputs.use_electric_field
+            ptc = Particle(x0, p0, B0, E0)
+        else
+            ptc = Particle(x0, p0, B0)
+        end
         data_length = Int(TotalSteps/SavePerNSteps)
         ptc_data = init_ptc_data(x0, p0, data_length)
 

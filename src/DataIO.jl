@@ -15,8 +15,7 @@ using ..PtcStruct
 using ..UserInputs
 using ..UserInputs: TotalSteps, SavePerNSteps
 using TimeZones  # 需要添加这个包
-
-export save_particle_data, read_particle_data, create_index_file, merge_process_files, SaveConfig
+export save_particle_data, read_particle_data, create_index_file, merge_process_files, SaveConfig, SaveConfigType
 
 """
     SaveConfigType
@@ -61,18 +60,17 @@ end
 """
     save_particle_data(ptc_data, n, x0, p0, B0, config)
 
-Save particle data using process-wise batch strategy. Each process writes to its own
-temporary file, which will be merged later.
+保存粒子数据，使用进程级批处理策略。每个进程写入自己的临时文件，之后合并。
 
 Parameters:
-- ptc_data: Particle trajectory data
-- n: Global particle number
-- x0: Initial position
-- p0: Initial momentum
-- B0: Initial magnetic field
-- config: Save configuration
+- ptc_data: 粒子轨迹数据
+- n: 全局粒子编号
+- x0: 初始位置
+- p0: 初始动量
+- B0: 初始磁场
+- config: 保存配置
 """
-function save_particle_data(ptc_data::ParticleData, n::Int, x0, p0, B0, config::SaveConfigType)
+function save_particle_data(ptc_data::AbstractParticleData, n::Int, x0, p0, B0, config::SaveConfigType)
     batch_number = ceil(Int, n/config.batch_size)
     # Each process writes to its own temporary file
     filename = joinpath(config.output_dir, 
@@ -100,25 +98,41 @@ end
 """
     save_single_particle(file, particle_id, ptc_data, global_n, x0, p0, B0)
 
-Save single particle data to HDF5 file.
-
-Parameters:
-- file: Open HDF5 file
-- particle_id: Particle ID within current batch
-- ptc_data: Particle trajectory data
-- global_n: Global particle number
-- x0, p0, B0: Initial conditions
+保存单个粒子数据到 HDF5 文件。
 """
-function save_single_particle(file, particle_id, ptc_data, global_n, x0, p0, B0)
+function save_single_particle(file, particle_id, ptc_data::MagneticParticleData, global_n, x0, p0, B0)
     g_ptc = create_group(file, "particle_$particle_id")
     
-    # Save trajectory data
+    # 保存轨迹数据
     g_traj = create_group(g_ptc, "trajectory")
     g_traj["position"] = ptc_data.X
     g_traj["momentum"] = ptc_data.P
     g_traj["magnetic_field"] = ptc_data.B
     
-    # Save metadata
+    # 保存元数据
+    save_metadata(g_ptc, global_n, x0, p0, B0)
+end
+
+function save_single_particle(file, particle_id, ptc_data::EMParticleData, global_n, x0, p0, B0)
+    g_ptc = create_group(file, "particle_$particle_id")
+    
+    # 保存轨迹数据
+    g_traj = create_group(g_ptc, "trajectory")
+    g_traj["position"] = ptc_data.X
+    g_traj["momentum"] = ptc_data.P
+    g_traj["magnetic_field"] = ptc_data.B
+    g_traj["electric_field"] = ptc_data.E
+    
+    # 保存元数据
+    save_metadata(g_ptc, global_n, x0, p0, B0)
+end
+
+"""
+    save_metadata(g_ptc, global_n, x0, p0, B0)
+
+保存粒子的元数据。
+"""
+function save_metadata(g_ptc, global_n, x0, p0, B0)
     g_meta = create_group(g_ptc, "metadata")
     attrs(g_meta)["total_steps"] = TotalSteps
     attrs(g_meta)["save_per_n_steps"] = SavePerNSteps
@@ -126,7 +140,7 @@ function save_single_particle(file, particle_id, ptc_data, global_n, x0, p0, B0)
     attrs(g_meta)["creation_date"] = string(now(localzone()))
     attrs(g_meta)["Δt"] = UserInputs.Δt
     
-    # Save initial conditions
+    # 保存初始条件
     g_meta["initial_position"] = x0
     g_meta["initial_momentum"] = p0
     g_meta["initial_B_field"] = B0
@@ -182,14 +196,10 @@ end
 """
     read_particle_data(n, timestamp)
 
-Read data for specified particle.
+读取指定粒子的数据。
 
-Parameters:
-- n: Global particle number
-- timestamp: Data saving timestamp
-
-Returns:
-Dictionary containing position, momentum, magnetic field, and metadata
+返回：
+包含位置、动量、磁场（和电场，如果存在）以及元数据的字典
 """
 function read_particle_data(n::Int, timestamp::String)
     config = SaveConfig()
@@ -201,12 +211,19 @@ function read_particle_data(n::Int, timestamp::String)
     
     h5open(filename, "r") do file
         g_ptc = file["particle_$particle_id"]
-        return Dict(
+        data = Dict(
             "position" => read(g_ptc["trajectory/position"]),
             "momentum" => read(g_ptc["trajectory/momentum"]),
             "magnetic_field" => read(g_ptc["trajectory/magnetic_field"]),
             "metadata" => read_metadata(g_ptc["metadata"])
         )
+        
+        # 如果存在电场数据，则添加到返回结果中
+        if haskey(g_ptc["trajectory"], "electric_field")
+            data["electric_field"] = read(g_ptc["trajectory/electric_field"])
+        end
+        
+        return data
     end
 end
 

@@ -5,6 +5,8 @@ module UserInputs
 #     TotalSteps::Int # total steps
 # end
 
+use_electric_field = true  # 控制是否使用电场的开关
 include("user_inputs.jl")
 # inputs=Inputs(Δt, N, TotalSteps)
+
 end
