@@ -110,6 +110,9 @@ function main()
 
         # Main computation loop
         for i in 1:TotalSteps-1
+            if myid() == 1 && (i % round(Int, UserInputs.TotalSteps/10) == 0 || i == UserInputs.TotalSteps-1)
+                println("##\tstep = $i")
+            end
             push_ptc!(ptc)
             # Save intermediate results
             i % SavePerNSteps == 0 && i != TotalSteps && 
@@ -124,6 +127,11 @@ function main()
     merge_process_files(save_config)
     # Create index file for the dataset
     create_index_file(save_config)
+
+    end_time = time()  # 记录结束时间
+    if myid() == 1  # 只在主进程上打印
+        println("进程 $(myid()), 总计算时间: $(end_time - start_time) 秒")
+    end
 end
 # %%
 
