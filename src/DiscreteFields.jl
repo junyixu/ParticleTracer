@@ -75,12 +75,12 @@ function discrete(x,y,z)
                    parent((1-dϕ) * E_prev + dϕ * E_next))
         else
             return (parent((1-dϕ) * 𝐁_prev + dϕ * 𝐁_next), 
-                   zeros(3))  # 当不使用电场时返回零电场
+                   zeros(3))
         end
     end
     
-    v_id == -2 && error("出界!")
-    error("error!")
+    v_id == -2 && return (zeros(3), zeros(3))  # 粒子出界时返回零场
+    error("未知错误!")
 end
 
 end # module

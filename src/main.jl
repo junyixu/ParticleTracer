@@ -68,17 +68,27 @@ function save(ptc_data::EMParticleData, ptc::EMParticle, i::Int)
 end
 function push_ptc!(ptc::MagneticParticle)
     B, E = get_fields(ptc.X...)
+    
+    # 检查是否出界
+    if all(iszero, B) && all(iszero, E)
+        return false
+    end
+    
     xx, pp = pusher(ptc.X, ptc.P, E, B)
     
-    # 逐元素更新，而不是整体赋值
     for i in 1:3
         ptc.X[i] = xx[i]
         ptc.P[i] = pp[i]
         ptc.B[i] = B[i]
     end
+    return true
 end
 function push_ptc!(ptc::EMParticle)
     B, E = get_fields(ptc.X...)
+    # 检查是否出界
+    if all(iszero, B) && all(iszero, E)
+        return false
+    end
     xx, pp = pusher(ptc.X, ptc.P, E, B)
     
     # 逐元素更新，而不是整体赋值
@@ -88,6 +98,7 @@ function push_ptc!(ptc::EMParticle)
         ptc.B[i] = B[i]
         ptc.E[i] = E[i]
     end
+    return true
 end
 # end # @everywhere
 
@@ -140,13 +151,15 @@ end
 
 function simulate_particle!(ptc_data, ptc, n)
     for i in 1:TotalSteps-1
-        push_ptc!(ptc)
+        if !(push_ptc!(ptc))
+            return i  # 返回出界时的步数
+        end
         
-        # 只在需要保存的步骤进行保存
         if iszero(i % SavePerNSteps) && i != TotalSteps
             save(ptc_data, ptc, i ÷ SavePerNSteps + 1)
         end
     end
+    return nothing  # 粒子未出界
 end
 
 function initialize_particle(x0::Vector{T}, p0::Vector{T}) where T<:AbstractFloat
@@ -167,6 +180,7 @@ function main()
     
     # 创建进度跟踪变量
     last_sync_step = 0
+    escaped_particles = Set{Int}()  # 用于存储出界粒子的索引
     
     for (n, (x0, p0)) in enumerate(zip(x0_list, p0_list))
         x0, p0 = collect.((x0, p0))
@@ -174,9 +188,11 @@ function main()
         ptc = initialize_particle(x0, p0)
         ptc_data = init_ptc_data(x0, p0, data_length)
         
-        # 记录模拟时间
         t_sim_start = time()
-        simulate_particle!(ptc_data, ptc, n)
+        if (escape_step = simulate_particle!(ptc_data, ptc, n)) !== nothing
+            push!(escaped_particles, n)
+            @info "粒子 $n 在第 $escape_step 步出界"
+        end
         t_sim += time() - t_sim_start
         
         # 只在第一个粒子时输出同步步骤
@@ -209,6 +225,11 @@ function main()
         println("\t模拟时间: $(round(t_sim, digits=4)) 秒 ($(round(t_sim/t_total*100, digits=4))%)")
         println("\tIO时间: $(round(t_io, digits=4)) 秒 ($(round(t_io/t_total*100, digits=4))%)")
     end
+
+    # 可以在最后输出统计信息
+    n_escaped = length(escaped_particles)
+    n_total = length(x0_list)
+    @info "总计 $n_escaped / $n_total 个粒子出界"
 end
 # %%
 
