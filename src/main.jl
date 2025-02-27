@@ -181,9 +181,13 @@ function main()
         
         # 只在第一个粒子时输出同步步骤
         if n == 1
-            for i in SavePerNSteps:SavePerNSteps:TotalSteps-1
+            num_outputs = 10  # 期望的输出次数
+            output_interval = (TotalSteps - 1) ÷ num_outputs
+            for i in output_interval:output_interval:TotalSteps-1
                 myid() == 1 && println("Sync step = $i")
             end
+            # 额外输出最后一步
+            myid() == 1 && println("Sync step = $(TotalSteps-1)")
         end
         
         # 记录IO时间
