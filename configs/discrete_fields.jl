@@ -21,6 +21,7 @@ a  /= u.x # Minor radius of torus (m)
 x0 = Float64[1.57941 , 5.24294 , -1.29892] # initial position (m)
 p0 = Float64[ -0.0284313 , -0.0247643 ,   0.0213838 ] # initial momentum (kg*m/s)
 
+use_electric_field = true  # 控制是否使用电场的开关
 ptc_type=:alpha # particle type
 
 # pusher=:boris # pusher type
