@@ -18,8 +18,8 @@ R0 /= u.x # Major radius of torus (m)
 a  /= u.x # Minor radius of torus (m)
 
 # initial conditions
+init_type = :single
 x0 = Float64[1.8, 0, 0] / u.x # initial position (m)
-
 p0 = Float64[5.0, 1, 0] # initial momentum (kg*m/s)
 
 ptc_type=:electron # particle type

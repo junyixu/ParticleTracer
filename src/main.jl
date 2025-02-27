@@ -117,53 +117,93 @@ end
 # end
 
 # %%
+"""
+根据配置生成初始位置和动量
+"""
+function generate_initial_conditions(init_type::Symbol)
+    if init_type == :single
+        # 单粒子，使用确定的初始值
+        return [UserInputs.x0], [UserInputs.p0]
+    elseif init_type == :parabolic_torus
+        # 从环面抛物线分布采样多粒子
+        x0_list = [SetParticlePosition_ParabolicTorus(UserInputs.r_max) for _ in 1:UserInputs.N]
+        
+        # 对每个位置计算对应的动量
+        p0_list = [SetParticleMomentum_Gyrocenter(x..., get_fields(x...)[1]) 
+                   for x in x0_list] # p = f(x,y,z,Bx,By,Bz), 其中 Bx,By,Bz 是磁场, 无电场
+        
+        return x0_list, p0_list
+    else
+        error("未知的初始化类型: $init_type")
+    end
+end
 
-"""
-Main simulation program for particle trajectory calculation.
-Handles parallel computation and data saving.
-"""
+function simulate_particle!(ptc_data, ptc, n)
+    for i in 1:TotalSteps-1
+        push_ptc!(ptc)
+        
+        # 只在需要保存的步骤进行保存
+        if iszero(i % SavePerNSteps) && i != TotalSteps
+            save(ptc_data, ptc, i ÷ SavePerNSteps + 1)
+        end
+    end
+end
+
+function initialize_particle(x0::Vector{T}, p0::Vector{T}) where T<:AbstractFloat
+    B0, E0 = get_fields(x0...)
+    UserInputs.use_electric_field ? Particle(x0, p0, B0, E0) : Particle(x0, p0, B0)
+end
+
 function main()
-    start_time = time()  # 记录开始时间
+    t_start = time()
+    t_io = 0.0  # IO操作累计时间
+    t_sim = 0.0  # 模拟计算累计时间
     
-    # Create save configuration
     save_config = SaveConfig(batch_size=1000)
+    data_length = TotalSteps ÷ SavePerNSteps
     
-    for n = 1:UserInputs.N
-        # Initialize particle parameters
-        x0 = UserInputs.x0
-        B0,E0 = get_fields(x0...)
-        p0 = UserInputs.p0
-        if UserInputs.use_electric_field
-            ptc = Particle(x0, p0, B0, E0)
-        else
-            ptc = Particle(x0, p0, B0)
-        end
-        data_length = Int(TotalSteps/SavePerNSteps)
+    # 生成并处理所有粒子
+    x0_list, p0_list = generate_initial_conditions(UserInputs.init_type)
+    
+    # 创建进度跟踪变量
+    last_sync_step = 0
+    
+    for (n, (x0, p0)) in enumerate(zip(x0_list, p0_list))
+        x0, p0 = collect.((x0, p0))
+        
+        ptc = initialize_particle(x0, p0)
         ptc_data = init_ptc_data(x0, p0, data_length)
-
-        # Main computation loop
-        for i in 1:TotalSteps-1
-            if myid() == 1 && (i % round(Int, UserInputs.TotalSteps/10) == 0 || i == UserInputs.TotalSteps-1)
-                println("##\tstep = $i")
+        
+        # 记录模拟时间
+        t_sim_start = time()
+        simulate_particle!(ptc_data, ptc, n)
+        t_sim += time() - t_sim_start
+        
+        # 只在第一个粒子时输出同步步骤
+        if n == 1
+            for i in SavePerNSteps:SavePerNSteps:TotalSteps-1
+                myid() == 1 && println("Sync step = $i")
             end
-            push_ptc!(ptc)
-            # Save intermediate results
-            i % SavePerNSteps == 0 && i != TotalSteps && 
-                save(ptc_data, ptc, Int(i/SavePerNSteps)+1)
         end
-
-        # Each process saves to its temporary file
-        save_particle_data(ptc_data, n, x0, p0, B0, save_config)
+        
+        # 记录IO时间
+        t_io_start = time()
+        save_particle_data(ptc_data, n, x0, p0, get_fields(x0...)[1], save_config)
+        t_io += time() - t_io_start
     end
     
-    # After all computations, merge process files
+    # 记录最终IO操作时间
+    t_io_start = time()
     merge_process_files(save_config)
-    # Create index file for the dataset
     create_index_file(save_config)
+    t_io += time() - t_io_start
 
-    end_time = time()  # 记录结束时间
-    if myid() == 1  # 只在主进程上打印
-        println("进程 $(myid()), 总计算时间: $(end_time - start_time) 秒")
+    t_total = time() - t_start
+    if myid() == 1
+        println("进程 $(myid()):")
+        println("\t总计算时间: $(round(t_total, digits=4)) 秒")
+        println("\t模拟时间: $(round(t_sim, digits=4)) 秒 ($(round(t_sim/t_total*100, digits=4))%)")
+        println("\tIO时间: $(round(t_io, digits=4)) 秒 ($(round(t_io/t_total*100, digits=4))%)")
     end
 end
 # %%

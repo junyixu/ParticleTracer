@@ -1,6 +1,6 @@
 # simulation parameters
 Δt = 1.0e-1
-N = 50000 # number of particles
+N = 2 # number of particles
 # TotalSteps = 4000000 # total steps
 # SavePerNSteps = 10000 # Save 1000 steps
 TotalSteps = 100 # total steps
@@ -15,17 +15,18 @@ R0 = 1.7 / u.x # Major radius of torus (m)
 a  = 0.4 / u.x # Minor radius of torus (m)
 
 # initial conditions
-
-ptc_type=:electron # particle type
-
-# pusher=:boris # pusher type
-pusher=:RVPA_Cay3D
-
-output_dir = "./DataAnalysis2"
-
+init_type = :parabolic_torus
 μ = 5.0
 σ = 2.0
 sinθ_min = 0.0
 sinθ_max = 1.0
 ϕ_min=0.0
 ϕ_max=2π
+
+ptc_type=:electron # particle type
+field=:tokamak
+
+# pusher=:boris # pusher type
+pusher=:RVPA_Cay3D
+
+output_dir = "./DataAnalysis2"

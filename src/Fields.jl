@@ -27,7 +27,7 @@ function tokamak(x::Float64,y::Float64,z::Float64,q=2.0)
     B2=(q*R0*x+y*z)/(R²*q)
     B3=(-1+R0/R)/q
 
-    return [B1, B2, B3]
+    return [B1, B2, B3], [0.0, 0.0, 0.0]
 end
 
 end # module
