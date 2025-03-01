@@ -150,9 +150,19 @@ function generate_initial_conditions(init_type::Symbol)
 end
 
 function simulate_particle!(ptc_data, ptc, n)
+    num_outputs = 10  # 期望的输出次数
+    output_interval = (TotalSteps - 1) ÷ num_outputs
+    # 预先计算输出步数
+    output_steps = Set(output_interval:output_interval:TotalSteps-1)
+    
     for i in 1:TotalSteps-1
         if !(push_ptc!(ptc))
             return i  # 返回出界时的步数
+        end
+
+        if myid() == 1 && n==1 && i in output_steps
+            progress = round(i / (TotalSteps-1) * 100, digits=1)
+            println("模拟进度: $(progress)% (步骤 $i / $(TotalSteps))")
         end
         
         if iszero(i % SavePerNSteps) && i != TotalSteps
@@ -194,17 +204,6 @@ function main()
             @info "粒子 $n 在第 $escape_step 步出界"
         end
         t_sim += time() - t_sim_start
-        
-        # 只在第一个粒子时输出同步步骤
-        if n == 1
-            num_outputs = 10  # 期望的输出次数
-            output_interval = (TotalSteps - 1) ÷ num_outputs
-            for i in output_interval:output_interval:TotalSteps-1
-                myid() == 1 && println("Sync step = $i")
-            end
-            # 额外输出最后一步
-            myid() == 1 && println("Sync step = $(TotalSteps-1)")
-        end
         
         # 记录IO时间
         t_io_start = time()
