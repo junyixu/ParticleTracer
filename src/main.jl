@@ -10,22 +10,22 @@
 
 # using MyPlots
 # using Debugger
-using Dates
 
 using Distributed
 
 
-# @everywhere begin
+@everywhere begin
+using Dates
 include("Constants.jl")
 include("UserInputs.jl")
 include("PtcStruct.jl")
 include("Fields.jl")
 include("Pushers.jl")
 include("DataIO.jl")
-# end
+end
 
 
-# @everywhere begin
+@everywhere begin
 using .PtcStruct
 using .PtcStruct:MagneticParticleData, EMParticleData
 pusher = @eval Pushers.$(UserInputs.pusher)
@@ -35,12 +35,12 @@ using .Constants
 using HDF5
 using LinearAlgebra: ⋅, norm
 include("initialization.jl")
-# end
-
 using .DataIO
+end
+
 
 # %%
-# @everywhere begin
+@everywhere begin
 function init_ptc_data(x0::AbstractVector, p0::AbstractVector, N::Int)
     x0 = reshape(x0, 3, 1)
     p0 = reshape(p0, 3, 1)
@@ -100,7 +100,7 @@ function push_ptc!(ptc::EMParticle)
     end
     return true
 end
-# end # @everywhere
+end # @everywhere
 
 # %%
 # function anim(ps::Vector{Particle})
@@ -128,6 +128,7 @@ end
 # end
 
 # %%
+@everywhere begin
 """
 根据配置生成初始位置和动量
 """
@@ -176,6 +177,7 @@ function initialize_particle(x0::Vector{T}, p0::Vector{T}) where T<:AbstractFloa
     B0, E0 = get_fields(x0...)
     UserInputs.use_electric_field ? Particle(x0, p0, B0, E0) : Particle(x0, p0, B0)
 end
+end # @everywhere
 
 function main()
     t_start = time()
@@ -192,7 +194,9 @@ function main()
     last_sync_step = 0
     escaped_particles = Set{Int}()  # 用于存储出界粒子的索引
     
-    for (n, (x0, p0)) in enumerate(zip(x0_list, p0_list))
+    @sync @distributed for n in 1:length(x0_list)
+        x0 = x0_list[n]
+        p0 = p0_list[n]
         x0, p0 = collect.((x0, p0))
         
         ptc = initialize_particle(x0, p0)

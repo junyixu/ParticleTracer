@@ -1,8 +1,8 @@
 # simulation parameters
 Δt = 0.1
-N = 2 # number of particles
+N = 500 # number of particles
 # TotalSteps = ceil(Int, 40000*2π) # total steps
-TotalSteps = 10
+TotalSteps = 10000
 SavePerNSteps = 1 # Save 1000 steps
 
 # tokamak parameters
@@ -19,14 +19,14 @@ r_max /= u.x # Minor radius of torus (m)
 
 # initial conditions
 init_type = :parabolic_torus
-μ = 5.0
-σ = 2.0
+μ = 1.000938997514917
+σ = 0
 sinθ_min = 0.0
 sinθ_max = 1.0
 ϕ_min=0.0
 ϕ_max=2π
 
-use_electric_field = false  # 控制是否使用电场的开关
+use_electric_field = true  # 控制是否使用电场的开关
 ptc_type=:alpha # particle type
 
 # pusher=:boris # pusher type
