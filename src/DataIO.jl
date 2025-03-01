@@ -50,11 +50,12 @@ function SaveConfig(; batch_size=1000)
     mkpath(output_dir)
     timestamp = Dates.format(now(), "yyyymmdd_HHMMSS")
     
-    # Create a SaveConfigType configuration object
-    # batch_size: Number of particles per batch
-    # output_dir: Output directory path 
-    # timestamp: Timestamp of data saving operation
-    return (batch_size=batch_size, output_dir=output_dir, timestamp=timestamp)
+    # 根据进程数动态调整批处理大小
+    num_workers = nworkers()
+    adjusted_batch_size = max(batch_size ÷ num_workers, 100)
+    
+    # 创建保存配置对象
+    return (batch_size=adjusted_batch_size, output_dir=output_dir, timestamp=timestamp)
 end
 
 """
@@ -245,22 +246,29 @@ end
 """
     merge_process_files(config)
 
-Merge all process temporary data files into final batch files.
-Call this function after all computations are complete.
+将所有进程的临时数据文件合并为最终批处理文件。
+此函数应在所有计算完成后调用，且只应在主进程(进程1)上执行。
 
-Parameters:
-- config: Save configuration
+参数:
+- config: 保存配置
 """
 function merge_process_files(config::SaveConfigType)
+    # 确保只在主进程上执行
+    if myid() != 1
+        return
+    end
+    
     total_batches = ceil(Int, UserInputs.N/config.batch_size)
     
+    println("正在合并临时文件，共 $total_batches 个批次...")
+    
     for batch_number in 1:total_batches
-        # Create final batch file
+        # 创建最终批处理文件
         final_filename = joinpath(config.output_dir, 
                                 "particles_$(config.timestamp)_batch$(batch_number).h5")
         
         h5open(final_filename, "w") do final_file
-            # Merge all process files
+            # 合并所有进程文件
             for proc_id in workers()
                 proc_filename = joinpath(config.output_dir, 
                                       "particles_$(config.timestamp)_batch$(batch_number)_proc$(proc_id).h5")
@@ -271,15 +279,21 @@ function merge_process_files(config::SaveConfigType)
                         filter(particle_id -> startswith(particle_id, "particle_"), keys(proc_file)) |>
                             particle_ids -> foreach(particle_id -> copy_object(proc_file[particle_id], final_file, particle_id), particle_ids)
                     end
-                    # Delete temporary file
+                    # 删除临时文件
                     rm(proc_filename)
                 end
             end
             
-            # Update final file metadata
+            # 更新最终文件元数据
             update_batch_metadata!(final_file, batch_number, config)
         end
+        
+        # 显示合并进度
+        if batch_number % 10 == 0 || batch_number == total_batches
+            println("已完成批次合并: $batch_number / $total_batches")
+        end
     end
+    println("所有文件合并完成！")
 end
 
 end # module 

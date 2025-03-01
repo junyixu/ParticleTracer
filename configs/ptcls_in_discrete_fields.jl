@@ -1,9 +1,9 @@
 # simulation parameters
 Δt = 0.1
-N = 500 # number of particles
+N = 4 # number of particles
 # TotalSteps = ceil(Int, 40000*2π) # total steps
-TotalSteps = 10000
-SavePerNSteps = 1 # Save 1000 steps
+TotalSteps = 400000
+SavePerNSteps = 10000 # Save 1000 steps
 
 # tokamak parameters
 B0 = 5.18 # Magnetic strength (T)

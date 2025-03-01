@@ -38,7 +38,6 @@ include("initialization.jl")
 using .DataIO
 end
 
-
 # %%
 @everywhere begin
 function init_ptc_data(x0::AbstractVector, p0::AbstractVector, N::Int)
@@ -150,7 +149,7 @@ function generate_initial_conditions(init_type::Symbol)
     end
 end
 
-function simulate_particle!(ptc_data, ptc, n)
+function simulate_particle!(ptc_data, ptc, n, save_per_n_steps=SavePerNSteps)
     num_outputs = 10  # 期望的输出次数
     output_interval = (TotalSteps - 1) ÷ num_outputs
     # 预先计算输出步数
@@ -166,8 +165,8 @@ function simulate_particle!(ptc_data, ptc, n)
             println("模拟进度: $(progress)% (步骤 $i / $(TotalSteps))")
         end
         
-        if iszero(i % SavePerNSteps) && i != TotalSteps
-            save(ptc_data, ptc, i ÷ SavePerNSteps + 1)
+        if iszero(i % save_per_n_steps) && i != TotalSteps
+            save(ptc_data, ptc, i ÷ save_per_n_steps + 1)
         end
     end
     return nothing  # 粒子未出界
@@ -182,39 +181,39 @@ end # @everywhere
 function main()
     t_start = time()
     t_io = 0.0  # IO操作累计时间
-    t_sim = 0.0  # 模拟计算累计时间
     
-    save_config = SaveConfig(batch_size=1000)
+    # 根据进程数调整批处理大小
+    num_workers = nworkers()
+    optimal_batch_size = max(1000 ÷ num_workers, 100)  # 根据进程数调整批大小
+    save_config = SaveConfig(batch_size=optimal_batch_size)
     data_length = TotalSteps ÷ SavePerNSteps
     
     # 生成并处理所有粒子
-    x0_list, p0_list = generate_initial_conditions(UserInputs.init_type)
+    # x0_list, p0_list = generate_initial_conditions(UserInputs.init_type)
     
     # 创建进度跟踪变量
     last_sync_step = 0
-    escaped_particles = Set{Int}()  # 用于存储出界粒子的索引
+    # 使用全局共享的RemoteChannel
     
-    @sync @distributed for n in 1:length(x0_list)
-        x0 = x0_list[n]
-        p0 = p0_list[n]
-        x0, p0 = collect.((x0, p0))
+    @sync @distributed for n in 1:UserInputs.N
+        x0 = SetParticlePosition_ParabolicTorus(UserInputs.r_max)
+        p0 = SetParticleMomentum_Gyrocenter(x0..., get_fields(x0...)[1])
         
         ptc = initialize_particle(x0, p0)
         ptc_data = init_ptc_data(x0, p0, data_length)
         
-        t_sim_start = time()
         if (escape_step = simulate_particle!(ptc_data, ptc, n)) !== nothing
-            push!(escaped_particles, n)
             @info "粒子 $n 在第 $escape_step 步出界"
         end
-        t_sim += time() - t_sim_start
-        
-        # 记录IO时间
-        t_io_start = time()
+        # t_sim = time() - t_start
+        # println("进程 myid():\t模拟时间: $(round(t_sim, digits=4)) 秒")
         save_particle_data(ptc_data, n, x0, p0, get_fields(x0...)[1], save_config)
-        t_io += time() - t_io_start
+        # println("进程 myid():\t写入时间: $(round((time() - t_start), digits=4)) 秒")
     end
-    
+    t_sim = time() - t_start
+    # 收集所有出界粒子信息
+    n_total = UserInputs.N
+
     # 记录最终IO操作时间
     t_io_start = time()
     merge_process_files(save_config)
@@ -222,17 +221,10 @@ function main()
     t_io += time() - t_io_start
 
     t_total = time() - t_start
-    if myid() == 1
-        println("进程 $(myid()):")
-        println("\t总计算时间: $(round(t_total, digits=4)) 秒")
-        println("\t模拟时间: $(round(t_sim, digits=4)) 秒 ($(round(t_sim/t_total*100, digits=4))%)")
-        println("\tIO时间: $(round(t_io, digits=4)) 秒 ($(round(t_io/t_total*100, digits=4))%)")
-    end
-
-    # 可以在最后输出统计信息
-    n_escaped = length(escaped_particles)
-    n_total = length(x0_list)
-    @info "总计 $n_escaped / $n_total 个粒子出界"
+    println("进程 $(myid()):")
+    println("\t总计算时间: $(round(t_total, digits=4)) 秒")
+    println("\t模拟时间: $(round(t_sim, digits=4)) 秒 ($(round(t_sim/t_total*100, digits=4))%)")
+    println("\tIO时间: $(round(t_io, digits=4)) 秒 ($(round(t_io/t_total*100, digits=4))%)")
 end
 # %%
 
