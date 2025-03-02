@@ -30,7 +30,7 @@ using .PtcStruct
 using .PtcStruct:MagneticParticleData, EMParticleData
 pusher = @eval Pushers.$(UserInputs.pusher)
 get_fields = @eval Fields.$(UserInputs.field)
-using .UserInputs: TotalSteps, SavePerNSteps
+using .UserInputs: TotalSteps, SavePerNSteps, is_data_saving_on, is_merge_process_files_on
 using .Constants
 using HDF5
 using LinearAlgebra: ⋅, norm
@@ -216,8 +216,10 @@ function main()
 
     # 记录最终IO操作时间
     t_io_start = time()
-    merge_process_files(save_config)
-    create_index_file(save_config)
+    if is_data_saving_on && is_merge_process_files_on
+        merge_process_files(save_config)
+        create_index_file(save_config)
+    end
     t_io += time() - t_io_start
 
     t_total = time() - t_start

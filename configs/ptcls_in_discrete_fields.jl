@@ -3,7 +3,7 @@
 N = 4 # number of particles
 # TotalSteps = ceil(Int, 40000*2π) # total steps
 TotalSteps = 400000
-SavePerNSteps = 10000 # Save 1000 steps
+SavePerNSteps = 100 # Save 1000 steps
 
 # tokamak parameters
 B0 = 5.18 # Magnetic strength (T)
@@ -25,6 +25,10 @@ sinθ_min = 0.0
 sinθ_max = 1.0
 ϕ_min=0.0
 ϕ_max=2π
+
+is_data_saving_on = false
+is_merge_process_files_on = false
+
 
 use_electric_field = true  # 控制是否使用电场的开关
 ptc_type=:alpha # particle type

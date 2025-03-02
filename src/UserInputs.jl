@@ -6,6 +6,8 @@ module UserInputs
 # end
 
 use_electric_field = false  # 控制是否使用电场的开关
+is_data_saving_on = true
+is_merge_process_files_on = true
 
 # 初始化类型
 init_type = :single  # 或 :parabolic_torus
