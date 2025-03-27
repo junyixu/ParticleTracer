@@ -16,13 +16,16 @@ end
 using HDF5
 using OffsetArrays
 
-include("/home/junyi/.julia/dev/Ptcs/src/Ptcs.jl")
+include("Ptcs.jl")
 import .Ptcs: get_vertex_id_by_pos!, MetaData, cart2cyld
 using ..UserInputs: use_electric_field
 
+println(fullname(@__MODULE__))
+println("路径是: ", pwd())
 const Δϕ = 2π/18
-const RESOURCE="/home/junyi/WorkSpace/apt_mhd/four_plus_100_ITER_100/"
-MD = MetaData(RESOURCE*"tearing_mode_3tables_compress.h5")
+println("Δϕ: $(Δϕ)")
+const RESOURCE="src/"
+MD = MetaData(joinpath(@__DIR__, "tearing_mode_3tables_compress.h5"))
 
 function h5load(filename::String, obj::String)
     fid=h5open(filename, "r")
@@ -31,10 +34,10 @@ function h5load(filename::String, obj::String)
     return data
 end
 
-B=h5load(RESOURCE*"BX_BY_BZ_0.h5", "B") # TODO `reshape(:, :, 3)` in julia should be more intuitive than offset in c language, don't you think?
+B=h5load(joinpath(@__DIR__,"BX_BY_BZ_0.h5"), "B") # TODO `reshape(:, :, 3)` in julia should be more intuitive than offset in c language, don't you think?
 B = OffsetArray(reshape(B, 3, :, 18), 0, -1, -1)
 
-E=h5load(RESOURCE*"BX_BY_BZ_0.h5", "E")
+E=h5load(joinpath(@__DIR__,"BX_BY_BZ_0.h5"), "E")
 E = OffsetArray(reshape(E, 3, :, 18), 0, -1, -1)
 
 function interpolate𝐁(three::Vector{Int}, 𝐱, 𝐁_data)

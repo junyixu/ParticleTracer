@@ -1,7 +1,5 @@
 module Pushers
-using Test
 using LinearAlgebra:norm
-export pusher2, pusher1
 using LinearAlgebra: I, ⋅, ×
 
 include("UserInputs.jl")
