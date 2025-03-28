@@ -1,3 +1,19 @@
+# ParticleTracer.jl
+
+[![Build status (Github Actions)](https://github.com/junyixu/ParticleTracer.jl/workflows/CI/badge.svg)](https://github.com/junyixu/ParticleTracer.jl/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+
+[![dev docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://junyixu.github.io/ParticleTracer.jl/dev)
+
+See the [documentation](https://junyixu.github.io/ParticleTracer.jl/dev/) for more.
+
+## Installation
+To install the package, run the following command in the Julia REPL:
+```julia
+]  # enter Pkg mode
+(@v1.10) pkg> add https://github.com/junyixu/ParticleTracer.jl.git
+```
+
 ## Tokamak fields
 
 $$\mathbf{B} = \boldsymbol{\nabla} \xi + \frac{r^2}{qR} \boldsymbol{\nabla}\theta,$$
