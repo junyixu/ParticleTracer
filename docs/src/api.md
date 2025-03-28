@@ -18,3 +18,7 @@ Order   = [:constant, :type, :function, :macro]
 ```
 
 ## DataIO API
+```@autodocs
+Modules = [ParticleTracer.DataIO]
+Order   = [:constant, :type, :function, :macro]
+```
