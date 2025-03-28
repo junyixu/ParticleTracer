@@ -1,6 +1,6 @@
 # Examples
 
-## Banana trajectory
+## Runaway Electron Banana trajectory
 ![banana](img/banana.png)
 
 ```julia
@@ -32,7 +32,7 @@ ptc_type=:electron # particle type
 pusher=:RVPA_Cay3D
 ```
 
-## Passage particles:
+## Passing particles:
 ![passage](img/passage.png)
 
 # Multiple Particles in Discrete Fields
