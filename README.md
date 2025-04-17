@@ -81,7 +81,7 @@ ptc_type=:electron # particle type
 pusher=:RVPA_Cay3D
 ```
 
-Passage particles:
+Passing particles:
 ![passage](resources/passage.png)
 
 # Ongoing work
